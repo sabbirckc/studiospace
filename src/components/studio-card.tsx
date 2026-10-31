@@ -28,6 +28,13 @@ export function StudioCard({ studio }: { studio: Studio }) {
   const { isInWishlist, toggleWishlist } = useWishlist();
   const saved = isInWishlist(studio._id);
 
+  const fallbackImage = 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=1200&q=80';
+  const [imgSrc, setImgSrc] = React.useState(studio.imageUrl || fallbackImage);
+
+  React.useEffect(() => {
+    setImgSrc(studio.imageUrl || fallbackImage);
+  }, [studio.imageUrl]);
+
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'Photo Studio':
@@ -50,8 +57,9 @@ export function StudioCard({ studio }: { studio: Studio }) {
       {/* Studio Image Container */}
       <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted">
         <img
-          src={studio.imageUrl}
+          src={imgSrc}
           alt={studio.title}
+          onError={() => setImgSrc(fallbackImage)}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
 

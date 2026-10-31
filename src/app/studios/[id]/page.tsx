@@ -165,6 +165,7 @@ export default function StudioDetailsPage({
             <img
               src={activeImage}
               alt={studio.title}
+              onError={() => setActiveImage('https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=1200&q=80')}
               className="w-full h-full object-cover"
             />
           </div>

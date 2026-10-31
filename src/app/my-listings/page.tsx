@@ -155,6 +155,9 @@ function MyListingsContent() {
                     <img
                       src={item.imageUrl}
                       alt={item.title}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=1200&q=80';
+                      }}
                       className="w-full h-full object-cover"
                     />
                   </div>
