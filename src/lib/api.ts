@@ -57,3 +57,4 @@ export const api = {
   delete: <T = any>(url: string) =>
     apiRequest<T>(url, { method: 'DELETE' }),
 };
+

@@ -149,3 +149,4 @@ export function StudioCard({ studio }: { studio: Studio }) {
     </div>
   );
 }
+

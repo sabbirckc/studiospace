@@ -178,3 +178,4 @@ export function HeroSlider() {
     </div>
   );
 }
+

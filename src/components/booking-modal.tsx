@@ -263,3 +263,4 @@ export function BookingModal({ studio, isOpen, onClose }: BookingModalProps) {
     </div>
   );
 }
+

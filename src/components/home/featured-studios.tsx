@@ -107,3 +107,4 @@ export function FeaturedStudios() {
     </section>
   );
 }
+
