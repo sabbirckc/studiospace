@@ -29,7 +29,8 @@ const ASSURANCES = [
 
 export function HostGuarantee() {
   return (
-    <section id="host-guarantee" className="py-24 bg-card border-b border-border transition-colors">
+    <section id="host-guarantee" className="relative py-24 bg-card border-b border-border transition-colors">
+      <div id="about-us" className="absolute -top-16 left-0 w-0 h-0 pointer-events-none" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           {/* Left Column: Heading & Value Prop */}
@@ -103,3 +104,4 @@ export function HostGuarantee() {
     </section>
   );
 }
+

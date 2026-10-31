@@ -69,7 +69,7 @@ export function Footer() {
     { name: 'Host Your Space', href: '/add-studio' },
     { name: 'How It Works', href: '/#how-it-works' },
     { name: 'Host Guarantee', href: '/#host-guarantee' },
-    { name: 'Creator Support & FAQ', href: '/#about-us' },
+    { name: 'About Us & FAQ', href: '/about-us' },
   ];
 
   return (

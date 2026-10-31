@@ -47,7 +47,7 @@ export function Navbar() {
     { label: 'Home', href: '/' },
     { label: 'Explore Studios', href: '/studios' },
     { label: 'How It Works', href: '/#how-it-works' },
-    { label: 'About Us', href: '/#about-us' },
+    { label: 'About Us', href: '/about-us' },
   ];
 
   const isActive = (href: string) => {
@@ -318,3 +318,4 @@ export function Navbar() {
     </header>
   );
 }
+
