@@ -16,12 +16,9 @@ import {
   Sparkles,
   ArrowRight,
   ShieldCheck,
-  Check,
-  UploadCloud,
-  Loader2
+  Check
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { uploadToImgBB } from '@/lib/upload';
 
 const DEFAULT_AMENITIES = [
   'Two-Wall Infinity Cyclorama',
@@ -59,30 +56,6 @@ function AddStudioForm() {
   const [customAmenity, setCustomAmenity] = useState('');
   const [overview, setOverview] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select a valid image file (PNG, JPG, WebP).');
-      return;
-    }
-
-    const toastId = toast.loading('Uploading studio photo...');
-    try {
-      setIsUploading(true);
-      const uploadedUrl = await uploadToImgBB(file);
-      setImageUrl(uploadedUrl);
-      toast.success('Studio image uploaded successfully!', { id: toastId });
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to upload image.', { id: toastId });
-    } finally {
-      setIsUploading(false);
-      e.target.value = '';
-    }
-  };
 
   const toggleAmenity = (item: string) => {
     setSelectedAmenities((prev) =>
@@ -286,29 +259,6 @@ function AddStudioForm() {
             <h2 className="font-heading font-bold text-lg text-foreground">
               Studio Photography & Cover Image
             </h2>
-
-            {/* ImgBB Direct Device File Upload */}
-            <div className="p-4 rounded-2xl border border-dashed border-border bg-muted/30 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-                  {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <UploadCloud className="w-5 h-5" />}
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-foreground">Upload from Device (ImgBB Integration)</p>
-                  <p className="text-[11px] text-muted-foreground">Upload local photos directly to ImgBB cloud storage</p>
-                </div>
-              </div>
-              <label className="cursor-pointer px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity flex items-center gap-2">
-                {isUploading ? 'Uploading...' : 'Choose Image File'}
-                <input
-                  type="file"
-                  accept="image/*"
-                  disabled={isUploading}
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
-              </label>
-            </div>
 
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">

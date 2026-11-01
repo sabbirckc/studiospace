@@ -29,7 +29,7 @@
 | **FrontEnd** | Next JS (App Router), Shadcn UI / Radix UI tokens, Tailwind CSS, TypeScript / JavaScript |
 | **Authentication & Authorization** | BetterAuth, MongoDB Adapter, JWT, HTTPOnly Secure Cookies |
 | **BackEnd** | Express JS, MongoDB Atlas (Native MongoClient), TypeScript / JavaScript |
-| **Integrations & Utilities** | ImgBB Image Upload API, jsPDF Invoice Generator, Sonner Modern Toasts |
+| **Integrations & Utilities** | jsPDF Invoice Generator, Sonner Modern Toasts |
 
 ---
 
