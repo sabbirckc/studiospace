@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { register, loginWithGoogle } = useAuth();
+  const { register, loginWithGoogle, openGoogleModal } = useAuth();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -220,7 +220,7 @@ export default function RegisterPage() {
           type="button"
           onClick={handleGoogleLogin}
           disabled={isSocialSubmitting}
-          className="w-full py-2.5 px-4 rounded-xl border border-border bg-background hover:bg-muted text-sm font-semibold flex items-center justify-center gap-2.5 transition-colors"
+          className="w-full py-2.5 px-4 rounded-xl border border-border bg-background hover:bg-muted text-sm font-semibold flex items-center justify-center gap-2.5 transition-colors cursor-pointer"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">
             <path
@@ -241,6 +241,14 @@ export default function RegisterPage() {
             />
           </svg>
           <span>Continue with Google</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={openGoogleModal}
+          className="w-full text-center text-xs text-primary font-medium hover:underline cursor-pointer"
+        >
+          Having trouble with Google popup? Register with Google Email directly →
         </button>
 
         {/* Link to Login */}

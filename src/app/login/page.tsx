@@ -11,7 +11,7 @@ function LoginFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get('redirect') || '/';
-  const { login, loginWithGoogle } = useAuth();
+  const { login, loginWithGoogle, openGoogleModal } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -174,7 +174,7 @@ function LoginFormContent() {
         type="button"
         onClick={handleGoogleLogin}
         disabled={isSocialSubmitting}
-        className="w-full py-2.5 px-4 rounded-xl border border-border bg-background hover:bg-muted text-sm font-semibold flex items-center justify-center gap-2.5 transition-colors"
+        className="w-full py-2.5 px-4 rounded-xl border border-border bg-background hover:bg-muted text-sm font-semibold flex items-center justify-center gap-2.5 transition-colors cursor-pointer"
       >
         <svg className="w-4 h-4" viewBox="0 0 24 24">
           <path
@@ -195,6 +195,14 @@ function LoginFormContent() {
           />
         </svg>
         <span>Continue with Google</span>
+      </button>
+
+      <button
+        type="button"
+        onClick={openGoogleModal}
+        className="w-full text-center text-xs text-primary font-medium hover:underline cursor-pointer"
+      >
+        Sign in with Google Email directly →
       </button>
 
       {/* Link to Register */}

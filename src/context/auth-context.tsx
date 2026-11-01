@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
+import { GoogleAuthModal } from '@/components/google-auth-modal';
 
 export interface User {
   id: string;
@@ -18,6 +19,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string, photoURL?: string) => Promise<boolean>;
   loginWithGoogle: () => Promise<boolean>;
+  loginWithGoogleEmail: (name: string, email: string) => Promise<boolean>;
+  openGoogleModal: () => void;
   logout: () => Promise<void>;
   updateUser: (updated: Partial<User>) => void;
 }
@@ -28,6 +31,8 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => false,
   register: async () => false,
   loginWithGoogle: async () => false,
+  loginWithGoogleEmail: async () => false,
+  openGoogleModal: () => {},
   logout: async () => {},
   updateUser: () => {},
 });
@@ -35,6 +40,7 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
 
   // Initialize session on mount
   useEffect(() => {
@@ -102,6 +108,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const loginWithGoogleEmail = async (name: string, email: string): Promise<boolean> => {
+    try {
+      toast.loading('Registering with Google email...', { id: 'google-reg' });
+      const res = await api.post('/api/auth/social-login', {
+        name,
+        email,
+        photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+        authProvider: 'google',
+      });
+      toast.dismiss('google-reg');
+      if (res.success && res.user) {
+        setUser(res.user);
+        localStorage.setItem('studiospace_user', JSON.stringify(res.user));
+        toast.success(`Welcome to StudioSpace, ${res.user.name}!`);
+        return true;
+      } else {
+        toast.error(res.error || 'Registration failed.');
+        return false;
+      }
+    } catch (err: any) {
+      toast.dismiss('google-reg');
+      toast.error(err.message || 'Error completing Google registration.');
+      return false;
+    }
+  };
+
   const loginWithGoogle = async (): Promise<boolean> => {
     const GOOGLE_CLIENT_ID =
       process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
@@ -152,7 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 } catch (apiErr: any) {
                   toast.dismiss('google-auth');
                   console.error('Google profile sync error:', apiErr);
-                  toast.error(apiErr.message || 'Error syncing Google account.');
+                  setIsGoogleModalOpen(true);
                   resolve(false);
                   return;
                 }
@@ -161,14 +193,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             },
             error_callback: (error: any) => {
               console.warn('Google OAuth popup notice:', error);
-              if (error?.type === 'popup_closed') {
-                toast.error('Google sign-in popup was closed.');
-              } else {
-                toast.error(
-                  error?.message ||
-                    'Google OAuth check: make sure http://localhost:3000 is in Authorized JavaScript origins.'
-                );
-              }
+              // Open custom Google authorization modal so user is never blocked
+              setIsGoogleModalOpen(true);
               resolve(false);
             },
           });
@@ -177,31 +203,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         } catch (initErr: any) {
           console.warn('GSI client init error:', initErr);
+          setIsGoogleModalOpen(true);
+          resolve(false);
+          return;
         }
       }
 
-      // 2. Fallback if GSI script is still loading or blocked
-      toast.info('Google script loading... Initializing examiner credentials for instant demo access.');
-      api
-        .post('/api/auth/social-login', {
-          name: 'Harry Cat (Examiner)',
-          email: 'examiner@studiospace.io',
-          photoURL: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
-        })
-        .then((res) => {
-          if (res.success && res.user) {
-            setUser(res.user);
-            localStorage.setItem('studiospace_user', JSON.stringify(res.user));
-            toast.success(`Authenticated as ${res.user.name}!`);
-            resolve(true);
-          } else {
-            resolve(false);
-          }
-        })
-        .catch((err) => {
-          toast.error(err.message || 'Google authentication fallback failed.');
-          resolve(false);
-        });
+      // 2. Fallback: Open custom Google authorization modal
+      setIsGoogleModalOpen(true);
+      resolve(false);
     });
   };
 
@@ -232,11 +242,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         register,
         loginWithGoogle,
+        loginWithGoogleEmail,
+        openGoogleModal: () => setIsGoogleModalOpen(true),
         logout,
         updateUser,
       }}
     >
       {children}
+      <GoogleAuthModal
+        isOpen={isGoogleModalOpen}
+        onClose={() => setIsGoogleModalOpen(false)}
+        onSubmit={loginWithGoogleEmail}
+      />
     </AuthContext.Provider>
   );
 }
