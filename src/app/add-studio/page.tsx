@@ -70,16 +70,17 @@ function AddStudioForm() {
       return;
     }
 
+    const toastId = toast.loading('Uploading studio photo...');
     try {
       setIsUploading(true);
-      toast.loading('Uploading studio photo to ImgBB...', { duration: 2000 });
       const uploadedUrl = await uploadToImgBB(file);
       setImageUrl(uploadedUrl);
-      toast.success('Studio image uploaded to ImgBB successfully!');
+      toast.success('Studio image uploaded successfully!', { id: toastId });
     } catch (err: any) {
-      toast.error(err.message || 'Failed to upload image to ImgBB.');
+      toast.error(err.message || 'Failed to upload image.', { id: toastId });
     } finally {
       setIsUploading(false);
+      e.target.value = '';
     }
   };
 
