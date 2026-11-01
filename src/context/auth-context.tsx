@@ -181,7 +181,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithGoogle = async (): Promise<boolean> => {
     try {
-      toast.loading('Connecting to Google via Better-Auth...', { duration: 2500 });
+      toast.loading('Logging...', { duration: 2500 });
       await authClient.signIn.social({
         provider: 'google',
         callbackURL: '/',
