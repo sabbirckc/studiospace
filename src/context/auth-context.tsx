@@ -5,6 +5,8 @@ import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { authClient } from '@/lib/auth-client';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 export interface User {
   id: string;
   name: string;
@@ -37,13 +39,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Sync token helper with backend
+  const syncBackendToken = async (u: { email: string; name?: string; photoURL?: string }) => {
+    try {
+      const syncRes = await fetch(`${API_BASE_URL}/api/auth/social-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          email: u.email,
+          name: u.name,
+          photoURL: u.photoURL,
+        }),
+      });
+      const syncData = await syncRes.json();
+      if (syncData?.success && syncData?.token) {
+        localStorage.setItem('studiospace_token', syncData.token);
+        if (syncData.user) {
+          const syncedUser: User = {
+            id: syncData.user.id || syncData.user._id,
+            name: syncData.user.name,
+            email: syncData.user.email,
+            photoURL: syncData.user.photoURL,
+            role: syncData.user.role || 'creator',
+          };
+          setUser(syncedUser);
+          localStorage.setItem('studiospace_user', JSON.stringify(syncedUser));
+        }
+      }
+    } catch (e) {
+      console.warn('Backend sync failed:', e);
+    }
+  };
+
   // Initialize session on mount
   useEffect(() => {
     // 1. Instant check from localStorage to prevent auth bounce on reload
+    let localUser: User | null = null;
     try {
       const cached = localStorage.getItem('studiospace_user');
       if (cached) {
-        setUser(JSON.parse(cached));
+        localUser = JSON.parse(cached);
+        setUser(localUser);
       }
     } catch (e) {
       console.error('Failed to parse cached user:', e);
@@ -66,6 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             };
             setUser(authUser);
             localStorage.setItem('studiospace_user', JSON.stringify(authUser));
+            await syncBackendToken(authUser);
             setLoading(false);
             return;
           }
@@ -74,15 +112,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // fallback to Express API
       }
 
+      // If user is cached locally, ensure backend token exists
+      if (localUser?.email) {
+        const token = localStorage.getItem('studiospace_token');
+        if (!token) {
+          await syncBackendToken(localUser);
+        }
+      }
+
       // B. Validate session with backend API
       try {
         const res = await api.get('/api/auth/me');
         if (res.success && res.user) {
           setUser(res.user);
           localStorage.setItem('studiospace_user', JSON.stringify(res.user));
-        } else {
+        } else if (!localUser) {
           setUser(null);
           localStorage.removeItem('studiospace_user');
+          localStorage.removeItem('studiospace_token');
         }
       } catch (err) {
         // Keep cached if offline
@@ -98,6 +145,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await api.post('/api/auth/login', { email, password });
       if (res.success && res.user) {
+        if (res.token) {
+          localStorage.setItem('studiospace_token', res.token);
+        }
         setUser(res.user);
         localStorage.setItem('studiospace_user', JSON.stringify(res.user));
         toast.success(`Welcome back, ${res.user.name}!`);
@@ -114,6 +164,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await api.post('/api/auth/register', { name, email, password, photoURL });
       if (res.success && res.user) {
+        if (res.token) {
+          localStorage.setItem('studiospace_token', res.token);
+        }
         setUser(res.user);
         localStorage.setItem('studiospace_user', JSON.stringify(res.user));
         toast.success(`Account created! Welcome to StudioSpace, ${res.user.name}!`);
@@ -150,6 +203,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {}
     setUser(null);
     localStorage.removeItem('studiospace_user');
+    localStorage.removeItem('studiospace_token');
     toast.success('You have been logged out.');
   };
 
