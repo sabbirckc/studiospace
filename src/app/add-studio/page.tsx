@@ -97,7 +97,21 @@ function AddStudioForm() {
 
       if (res.success) {
         toast.success('Your creative studio has been listed successfully!');
-        router.push('/my-listings');
+        // Reset form to completely fresh state
+        setTitle('');
+        setCategory('Photo Studio');
+        setHourlyRate('');
+        setSecurityDeposit('');
+        setMaxCapacity('');
+        setLocation('');
+        setImageUrl('');
+        setSelectedAmenities([]);
+        setOverview('');
+
+        // Automatically navigate and fresh reload the page so the new studio is visible immediately
+        setTimeout(() => {
+          window.location.href = '/my-listings';
+        }, 500);
       }
     } catch (err: any) {
       console.error('Add studio error:', err);

@@ -67,6 +67,7 @@ export async function apiRequest<T = any>(endpoint: string, options: FetchOption
   const authHeader: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
   let res = await fetch(url, {
+    cache: rest.cache || 'no-store',
     ...rest,
     credentials: 'include', // sends HTTPOnly cookies
     headers: {
@@ -82,6 +83,7 @@ export async function apiRequest<T = any>(endpoint: string, options: FetchOption
     const freshToken = await getOrSyncToken();
     if (freshToken) {
       res = await fetch(url, {
+        cache: rest.cache || 'no-store',
         ...rest,
         credentials: 'include',
         headers: {

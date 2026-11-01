@@ -123,7 +123,9 @@ function EditStudioForm({ studioId }: { studioId: string }) {
 
       if (res.success) {
         toast.success('Studio listing updated successfully!');
-        router.push('/my-listings');
+        setTimeout(() => {
+          window.location.href = '/my-listings';
+        }, 500);
       }
     } catch (err: any) {
       toast.error(err.message || 'Failed to update studio.');

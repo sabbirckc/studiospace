@@ -35,7 +35,7 @@ function MyListingsContent() {
   const fetchListings = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/api/studios/my-listings');
+      const res = await api.get(`/api/studios/my-listings?t=${Date.now()}`);
       if (res.success && Array.isArray(res.studios)) {
         setListings(res.studios);
       } else {
@@ -52,6 +52,12 @@ function MyListingsContent() {
     if (user) {
       fetchListings();
     }
+
+    const onFocus = () => {
+      if (user) fetchListings();
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
   }, [user]);
 
   const handleDeleteConfirm = async () => {
