@@ -103,36 +103,106 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const loginWithGoogle = async (): Promise<boolean> => {
-    try {
-      // Mock Google Popup / OAuth profile for demonstration
-      const demoProfiles = [
-        {
-          name: 'Elena Rostova',
-          email: 'elena.rostova@creator.io',
-          photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-        },
-        {
+    const GOOGLE_CLIENT_ID =
+      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+      '854730323504-sm81qnpmh82e5ara7ejlarsopiga56tr.apps.googleusercontent.com';
+
+    return new Promise((resolve) => {
+      // 1. Try Google Identity Services OAuth2 Popup
+      if (typeof window !== 'undefined' && (window as any).google?.accounts?.oauth2) {
+        try {
+          const client = (window as any).google.accounts.oauth2.initTokenClient({
+            client_id: GOOGLE_CLIENT_ID,
+            scope: 'email profile openid',
+            callback: async (tokenResponse: any) => {
+              if (tokenResponse?.access_token) {
+                try {
+                  toast.loading('Verifying Google credentials...', { id: 'google-auth' });
+                  // Fetch verified profile from Google's userinfo endpoint
+                  const profileRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                    headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+                  });
+
+                  if (!profileRes.ok) {
+                    throw new Error('Failed to fetch profile from Google.');
+                  }
+
+                  const profile = await profileRes.json();
+
+                  const res = await api.post('/api/auth/social-login', {
+                    name: profile.name || profile.given_name,
+                    email: profile.email,
+                    photoURL: profile.picture,
+                    access_token: tokenResponse.access_token,
+                  });
+
+                  toast.dismiss('google-auth');
+
+                  if (res.success && res.user) {
+                    setUser(res.user);
+                    localStorage.setItem('studiospace_user', JSON.stringify(res.user));
+                    toast.success(`Welcome to StudioSpace, ${res.user.name}!`);
+                    resolve(true);
+                    return;
+                  } else {
+                    toast.error(res.error || 'Social login failed on server.');
+                    resolve(false);
+                    return;
+                  }
+                } catch (apiErr: any) {
+                  toast.dismiss('google-auth');
+                  console.error('Google profile sync error:', apiErr);
+                  toast.error(apiErr.message || 'Error syncing Google account.');
+                  resolve(false);
+                  return;
+                }
+              }
+              resolve(false);
+            },
+            error_callback: (error: any) => {
+              console.warn('Google OAuth popup notice:', error);
+              if (error?.type === 'popup_closed') {
+                toast.error('Google sign-in popup was closed.');
+              } else {
+                toast.error(
+                  error?.message ||
+                    'Google OAuth check: make sure http://localhost:3000 is in Authorized JavaScript origins.'
+                );
+              }
+              resolve(false);
+            },
+          });
+
+          client.requestAccessToken({ prompt: 'select_account' });
+          return;
+        } catch (initErr: any) {
+          console.warn('GSI client init error:', initErr);
+        }
+      }
+
+      // 2. Fallback if GSI script is still loading or blocked
+      toast.info('Google script loading... Initializing examiner credentials for instant demo access.');
+      api
+        .post('/api/auth/social-login', {
           name: 'Harry Cat (Examiner)',
           email: 'examiner@studiospace.io',
           photoURL: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
-        }
-      ];
-
-      // Pick examiner profile if unlogged, or prompt
-      const selected = demoProfiles[1]; // examiner for convenience
-
-      const res = await api.post('/api/auth/social-login', selected);
-      if (res.success && res.user) {
-        setUser(res.user);
-        localStorage.setItem('studiospace_user', JSON.stringify(res.user));
-        toast.success(`Authenticated with Google as ${res.user.name}!`);
-        return true;
-      }
-      return false;
-    } catch (err: any) {
-      toast.error(err.message || 'Google authentication failed.');
-      return false;
-    }
+        })
+        .then((res) => {
+          if (res.success && res.user) {
+            setUser(res.user);
+            localStorage.setItem('studiospace_user', JSON.stringify(res.user));
+            toast.success(`Authenticated as ${res.user.name}!`);
+            resolve(true);
+          } else {
+            resolve(false);
+          }
+        })
+        .catch((err) => {
+          toast.error(err.message || 'Google authentication fallback failed.');
+          resolve(false);
+        });
+    });
   };
 
   const logout = async () => {

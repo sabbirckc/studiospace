@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import './globals.css';
 
 import { ThemeProvider } from '@/context/theme-context';
@@ -22,6 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full antialiased suppressHydrationWarning">
       <body className="min-h-full flex flex-col bg-background text-foreground transition-colors duration-300">
+        <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" />
         <ThemeProvider>
           <AuthProvider>
             <WishlistProvider>
