@@ -28,14 +28,50 @@ export function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [activeHash, setActiveHash] = useState('');
 
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
+
+      // Dynamically detect if user scrolled into #how-it-works on homepage
+      if (window.location.pathname === '/') {
+        const el = document.getElementById('how-it-works');
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (rect.top <= 200 && rect.bottom >= 200) {
+            setActiveHash('#how-it-works');
+          } else if (window.scrollY < 400) {
+            setActiveHash('');
+          }
+        }
+      }
     };
+
+    const handleHashChange = () => {
+      setActiveHash(window.location.hash);
+    };
+
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('hashchange', handleHashChange);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('hashchange', handleHashChange);
+    };
   }, []);
+
+  // Handle smooth scroll when navigating to #how-it-works on mount or route transition
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#how-it-works') {
+      setActiveHash('#how-it-works');
+      setTimeout(() => {
+        const el = document.getElementById('how-it-works');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 150);
+    }
+  }, [pathname]);
 
   // Close menus on path change
   useEffect(() => {
@@ -50,8 +86,37 @@ export function Navbar() {
     { label: 'About Us', href: '/about-us' },
   ];
 
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (href.includes('#how-it-works')) {
+      if (pathname === '/') {
+        e.preventDefault();
+        const el = document.getElementById('how-it-works');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          window.history.pushState(null, '', '#how-it-works');
+          setActiveHash('#how-it-works');
+        }
+      }
+    } else if (href === '/') {
+      if (pathname === '/') {
+        e.preventDefault();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.history.pushState(null, '', '/');
+        setActiveHash('');
+      }
+    } else {
+      setActiveHash('');
+    }
+    setMobileMenuOpen(false);
+  };
+
   const isActive = (href: string) => {
-    if (href === '/') return pathname === '/';
+    if (href === '/#how-it-works') {
+      return pathname === '/' && activeHash === '#how-it-works';
+    }
+    if (href === '/') {
+      return pathname === '/' && activeHash !== '#how-it-works';
+    }
     return pathname.startsWith(href) && href !== '/';
   };
 
@@ -87,6 +152,7 @@ export function Navbar() {
               <Link
                 key={link.label}
                 href={link.href}
+                onClick={(e) => handleNavClick(e, link.href)}
                 className={`relative px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
                   active
                     ? 'text-foreground font-semibold'
@@ -233,6 +299,7 @@ export function Navbar() {
               <Link
                 key={link.label}
                 href={link.href}
+                onClick={(e) => handleNavClick(e, link.href)}
                 className={`block px-3 py-2 rounded-lg text-base font-medium ${
                   isActive(link.href) ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground hover:bg-muted'
                 }`}

@@ -37,7 +37,7 @@ const STEPS = [
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="py-24 bg-background border-b border-border transition-colors">
+    <section id="how-it-works" className="scroll-mt-24 py-24 bg-background border-b border-border transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto space-y-3">
