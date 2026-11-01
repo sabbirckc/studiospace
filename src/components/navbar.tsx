@@ -34,16 +34,29 @@ export function Navbar() {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
 
-      // Dynamically detect if user scrolled into #how-it-works on homepage
+      // Dynamically detect if user scrolled into #how-it-works or #about-us on homepage
       if (window.location.pathname === '/') {
-        const el = document.getElementById('how-it-works');
-        if (el) {
-          const rect = el.getBoundingClientRect();
-          if (rect.top <= 200 && rect.bottom >= 200) {
-            setActiveHash('#how-it-works');
-          } else if (window.scrollY < 400) {
-            setActiveHash('');
+        const aboutEl = document.getElementById('about-us');
+        const howEl = document.getElementById('how-it-works');
+
+        if (aboutEl) {
+          const rect = aboutEl.getBoundingClientRect();
+          if (rect.top <= 250 && rect.bottom >= 200) {
+            setActiveHash('#about-us');
+            return;
           }
+        }
+
+        if (howEl) {
+          const rect = howEl.getBoundingClientRect();
+          if (rect.top <= 250 && rect.bottom >= 200) {
+            setActiveHash('#how-it-works');
+            return;
+          }
+        }
+
+        if (window.scrollY < 400) {
+          setActiveHash('');
         }
       }
     };
@@ -60,16 +73,20 @@ export function Navbar() {
     };
   }, []);
 
-  // Handle smooth scroll when navigating to #how-it-works on mount or route transition
+  // Handle smooth scroll when navigating to #how-it-works or #about-us on mount or route transition
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.hash === '#how-it-works') {
-      setActiveHash('#how-it-works');
-      setTimeout(() => {
-        const el = document.getElementById('how-it-works');
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 150);
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash;
+      if (hash === '#how-it-works' || hash === '#about-us') {
+        setActiveHash(hash);
+        setTimeout(() => {
+          const id = hash.replace('#', '');
+          const el = document.getElementById(id);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 150);
+      }
     }
   }, [pathname]);
 
@@ -83,7 +100,7 @@ export function Navbar() {
     { label: 'Home', href: '/' },
     { label: 'Explore Studios', href: '/studios' },
     { label: 'How It Works', href: '/#how-it-works' },
-    { label: 'About Us', href: '/about-us' },
+    { label: 'About Us', href: '/#about-us' },
   ];
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
@@ -95,6 +112,16 @@ export function Navbar() {
           el.scrollIntoView({ behavior: 'smooth', block: 'start' });
           window.history.pushState(null, '', '#how-it-works');
           setActiveHash('#how-it-works');
+        }
+      }
+    } else if (href.includes('#about-us')) {
+      if (pathname === '/') {
+        e.preventDefault();
+        const el = document.getElementById('about-us');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          window.history.pushState(null, '', '#about-us');
+          setActiveHash('#about-us');
         }
       }
     } else if (href === '/') {
@@ -114,8 +141,11 @@ export function Navbar() {
     if (href === '/#how-it-works') {
       return pathname === '/' && activeHash === '#how-it-works';
     }
+    if (href === '/#about-us') {
+      return pathname === '/' && activeHash === '#about-us';
+    }
     if (href === '/') {
-      return pathname === '/' && activeHash !== '#how-it-works';
+      return pathname === '/' && !activeHash;
     }
     return pathname.startsWith(href) && href !== '/';
   };
