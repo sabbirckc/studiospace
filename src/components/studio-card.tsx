@@ -28,7 +28,7 @@ export function StudioCard({ studio }: { studio: Studio }) {
   const { isInWishlist, toggleWishlist } = useWishlist();
   const saved = isInWishlist(studio._id);
 
-  const fallbackImage = 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=1200&q=80';
+  const fallbackImage = '/image-1.png';
   const [imgSrc, setImgSrc] = React.useState(studio.imageUrl || fallbackImage);
 
   React.useEffect(() => {
