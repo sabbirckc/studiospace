@@ -16,7 +16,11 @@ import {
   AlertCircle,
   Download,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Printer,
+  ExternalLink,
+  Eye,
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
@@ -49,6 +53,9 @@ function MyBookingsContent() {
   // Cancellation modal state
   const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+
+  // Invoice modal state for on-screen view, print & download fallback
+  const [selectedInvoiceBooking, setSelectedInvoiceBooking] = useState<Booking | null>(null);
 
   const fetchBookings = async () => {
     try {
@@ -92,14 +99,30 @@ function MyBookingsContent() {
     }
   };
 
-  // Optional Feature 1: PDF Booking Invoice Generator
-  const generatePDFInvoice = (booking: Booking) => {
+  // Optional Feature 1: Robust PDF Booking Invoice Generator
+  const generatePDFInvoice = (booking: Booking, autoOpen: boolean = false) => {
     try {
       const doc = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4',
       });
+
+      const safeTotal = Number(booking.totalAmount || 0);
+      const safeHourly = Number(booking.hourlyRate || 0);
+      const safeHours = Number(booking.shootHours || 1);
+      const safeTitle = String(booking.studioTitle || 'Creative Production Studio');
+      const safeRef = String(booking.bookingReference || `ST-${booking._id || Date.now()}`).replace(/[^a-zA-Z0-9_-]/g, '_');
+      const safeCategory = String(booking.studioCategory || 'Production Studio');
+      const safeLocation = String(booking.studioLocation || 'Creative Arts District');
+      const safeDate = String(booking.bookingDate || new Date().toISOString().split('T')[0]);
+      const safeStart = String(booking.startTime || '09:00');
+      const safeEnd = String(booking.endTime || '17:00');
+      const safeGuestCount = Number(booking.guestCount || 1);
+      const safeStatus = String(booking.status || 'Pending').toUpperCase();
+      const safeNotes = String(booking.specialNotes || 'None');
+      const userName = String(user?.name || 'Studio Creator');
+      const userEmail = String(user?.email || 'creator@studiospace.io');
 
       // Header Banner
       doc.setFillColor(24, 24, 27); // Zinc 900
@@ -120,11 +143,11 @@ function MyBookingsContent() {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(14);
       doc.setTextColor(255, 255, 255);
-      doc.text('OFFICIAL BOOKING RECEIPT', 125, 22);
+      doc.text('OFFICIAL BOOKING RECEIPT', 120, 22);
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
-      doc.text(`Issued: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, 125, 30);
+      doc.text(`Issued: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, 120, 30);
 
       // Invoice Details Block
       doc.setTextColor(39, 39, 42);
@@ -140,21 +163,21 @@ function MyBookingsContent() {
       doc.setFontSize(10);
       doc.text(`Booking Reference:`, 16, 70);
       doc.setFont('helvetica', 'bold');
-      doc.text(booking.bookingReference, 60, 70);
+      doc.text(safeRef, 60, 70);
 
       doc.setFont('helvetica', 'normal');
       doc.text(`Current Status:`, 16, 78);
       doc.setFont('helvetica', 'bold');
-      doc.text(booking.status.toUpperCase(), 60, 78);
+      doc.text(safeStatus, 60, 78);
 
       doc.setFont('helvetica', 'normal');
       doc.text(`Creator Name:`, 16, 86);
       doc.setFont('helvetica', 'bold');
-      doc.text(user?.name || 'Studio Creator', 60, 86);
+      doc.text(userName, 60, 86);
 
       doc.setFont('helvetica', 'normal');
       doc.text(`Creator Email:`, 16, 94);
-      doc.text(user?.email || 'N/A', 60, 94);
+      doc.text(userEmail, 60, 94);
 
       // Studio Specs Box
       doc.setFillColor(244, 244, 245);
@@ -163,14 +186,14 @@ function MyBookingsContent() {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
       doc.setTextColor(24, 24, 27);
-      doc.text(booking.studioTitle, 22, 114);
+      doc.text(safeTitle.length > 45 ? `${safeTitle.substring(0, 42)}...` : safeTitle, 22, 114);
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
       doc.setTextColor(113, 113, 122);
-      doc.text(`Category: ${booking.studioCategory} | Location: ${booking.studioLocation}`, 22, 122);
-      doc.text(`Shoot Date: ${booking.bookingDate} | Hours: ${booking.startTime} - ${booking.endTime} (${booking.shootHours} Hours total)`, 22, 130);
-      doc.text(`Crew Count: ${booking.guestCount} People`, 22, 136);
+      doc.text(`Category: ${safeCategory} | Location: ${safeLocation}`, 22, 122);
+      doc.text(`Shoot Date: ${safeDate} | Hours: ${safeStart} - ${safeEnd} (${safeHours} Hours total)`, 22, 130);
+      doc.text(`Crew Count: ${safeGuestCount} People | Notes: ${safeNotes.substring(0, 50)}`, 22, 136);
 
       // Financial Itemization Table
       doc.setFont('helvetica', 'bold');
@@ -187,22 +210,23 @@ function MyBookingsContent() {
       doc.text('Description', 20, 172);
       doc.text('Rate', 120, 172);
       doc.text('Quantity', 145, 172);
-      doc.text('Subtotal', 175, 172);
+      doc.text('Subtotal', 172, 172);
 
       // Table Row
       doc.setFont('helvetica', 'normal');
-      doc.text(`Production Studio Time (${booking.studioTitle.substring(0, 35)}...)`, 20, 182);
-      doc.text(`$${booking.hourlyRate}/hr`, 120, 182);
-      doc.text(`${booking.shootHours} hrs`, 145, 182);
-      doc.text(`$${booking.totalAmount.toFixed(2)}`, 175, 182);
+      const descText = `Production Studio Time (${safeTitle.substring(0, 32)}...)`;
+      doc.text(descText, 20, 182);
+      doc.text(`$${safeHourly}/hr`, 120, 182);
+      doc.text(`${safeHours} hrs`, 145, 182);
+      doc.text(`$${safeTotal.toFixed(2)}`, 172, 182);
 
       doc.line(16, 188, 194, 188);
 
       // Total Row
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(12);
-      doc.text('Total Reservation Amount:', 110, 202);
-      doc.text(`$${booking.totalAmount.toFixed(2)} USD`, 165, 202);
+      doc.text('Total Reservation Amount:', 105, 202);
+      doc.text(`$${safeTotal.toFixed(2)} USD`, 165, 202);
 
       // Verification Watermark & Terms Footer
       doc.setFont('helvetica', 'normal');
@@ -210,11 +234,35 @@ function MyBookingsContent() {
       doc.setTextColor(161, 161, 170);
       doc.text('This invoice constitutes an official reservation document under StudioSpace Creator Terms & Conditions.', 16, 260);
       doc.text('Includes $1M Host Liability Protection and STC Double-Booking Guarantee.', 16, 265);
-      doc.text(`Generated automatically by StudioSpace Platform • ID: ${booking._id}`, 16, 270);
+      doc.text(`Generated automatically by StudioSpace Platform • ID: ${booking._id || 'N/A'}`, 16, 270);
 
-      // Save PDF
-      doc.save(`StudioSpace-Invoice-${booking.bookingReference}.pdf`);
-      toast.success(`PDF invoice for ${booking.bookingReference} downloaded!`);
+      // Generate pure binary PDF Blob
+      const pdfArrayBuffer = doc.output('arraybuffer');
+      const pdfBlob = new Blob([pdfArrayBuffer], { type: 'application/pdf' });
+      const blobUrl = URL.createObjectURL(pdfBlob);
+      const fileName = `StudioSpace-Invoice-${safeRef}.pdf`;
+
+      if (autoOpen) {
+        // Direct open in browser PDF viewer
+        window.open(blobUrl, '_blank');
+        toast.success(`Invoice opened in browser!`);
+      } else {
+        // Bulletproof anchor download directly triggering browser file download
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = blobUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        toast.success(`PDF invoice for ${safeRef} downloaded!`);
+
+        setTimeout(() => {
+          if (document.body.contains(a)) {
+            document.body.removeChild(a);
+          }
+          URL.revokeObjectURL(blobUrl);
+        }, 60000);
+      }
     } catch (err: any) {
       console.error('PDF generation error:', err);
       toast.error('Failed to generate PDF receipt.');
@@ -372,19 +420,31 @@ function MyBookingsContent() {
                   <div className="text-left lg:text-right">
                     <span className="text-xs text-muted-foreground block">Total Amount</span>
                     <span className="font-heading font-black text-2xl text-foreground">
-                      ${booking.totalAmount.toFixed(2)}
+                      ${Number(booking.totalAmount || 0).toFixed(2)}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-2.5">
                     {/* Optional Requirement: PDF Invoice Generator */}
                     <button
-                      onClick={() => generatePDFInvoice(booking)}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-border text-xs font-semibold text-foreground hover:bg-muted transition-colors"
-                      title="Download PDF Invoice Receipt"
+                      onClick={() => {
+                        setSelectedInvoiceBooking(booking);
+                        generatePDFInvoice(booking, false);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary/10 border border-primary/20 text-xs font-semibold text-primary hover:bg-primary/20 transition-colors cursor-pointer"
+                      title="Download and view official PDF invoice"
                     >
-                      <Download className="w-3.5 h-3.5 text-primary" />
+                      <Download className="w-3.5 h-3.5" />
                       <span>PDF Invoice</span>
+                    </button>
+
+                    <button
+                      onClick={() => setSelectedInvoiceBooking(booking)}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border text-xs font-semibold text-foreground hover:bg-muted transition-colors cursor-pointer"
+                      title="View on-screen invoice receipt"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span>View</span>
                     </button>
 
                     {/* Cancel Booking option for Pending slots */}
@@ -443,6 +503,184 @@ function MyBookingsContent() {
               >
                 {isCancelling ? 'Cancelling...' : 'Confirm Cancellation'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Official Invoice Receipt Modal (On-Screen View, Direct PDF Download & Print) */}
+      {selectedInvoiceBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-150">
+          <div className="w-full max-w-2xl rounded-3xl border border-border bg-card shadow-2xl overflow-hidden my-8">
+            {/* Modal Controls Bar */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/40 print:hidden">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-primary" />
+                <span className="font-heading font-bold text-sm text-foreground">
+                  Official Reservation Invoice Receipt
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => generatePDFInvoice(selectedInvoiceBooking, false)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
+                  title="Download binary PDF file"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download PDF</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => generatePDFInvoice(selectedInvoiceBooking, true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-semibold hover:bg-muted transition-colors cursor-pointer"
+                  title="Open PDF directly in new tab"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Open in Tab</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-semibold hover:bg-muted transition-colors cursor-pointer"
+                  title="Print invoice or save via browser PDF printer"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Print</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedInvoiceBooking(null)}
+                  className="w-8 h-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Printable Document Body */}
+            <div id="printable-invoice" className="p-6 sm:p-10 space-y-6 text-foreground bg-card">
+              {/* Document Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <span className="font-heading font-black text-xl tracking-tight text-foreground">
+                      StudioSpace
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Peer-to-Peer Creative Workspace Platform</p>
+                </div>
+                <div className="text-left sm:text-right space-y-1">
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20 block sm:inline-block">
+                    OFFICIAL BOOKING RECEIPT
+                  </span>
+                  <p className="text-[11px] text-muted-foreground">
+                    Issued: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                  </p>
+                </div>
+              </div>
+
+              {/* Specifications Grid */}
+              <div className="grid grid-cols-2 gap-4 text-xs">
+                <div className="space-y-1">
+                  <span className="text-muted-foreground uppercase tracking-wider text-[10px] font-bold block">
+                    Booking Reference
+                  </span>
+                  <span className="font-mono font-bold text-sm text-foreground">
+                    {selectedInvoiceBooking.bookingReference}
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-muted-foreground uppercase tracking-wider text-[10px] font-bold block">
+                    Reservation Status
+                  </span>
+                  {getStatusBadge(selectedInvoiceBooking.status)}
+                </div>
+                <div className="space-y-1">
+                  <span className="text-muted-foreground uppercase tracking-wider text-[10px] font-bold block">
+                    Creator Name
+                  </span>
+                  <span className="font-semibold text-foreground">{user?.name || 'Studio Creator'}</span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-muted-foreground uppercase tracking-wider text-[10px] font-bold block">
+                    Creator Email
+                  </span>
+                  <span className="text-foreground">{user?.email || 'N/A'}</span>
+                </div>
+              </div>
+
+              {/* Studio Info Card */}
+              <div className="p-4 rounded-2xl bg-muted/40 border border-border space-y-2 text-xs">
+                <h4 className="font-heading font-bold text-sm text-foreground">
+                  {selectedInvoiceBooking.studioTitle}
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-muted-foreground">
+                  <p><strong>Category:</strong> {selectedInvoiceBooking.studioCategory}</p>
+                  <p><strong>Location:</strong> {selectedInvoiceBooking.studioLocation}</p>
+                  <p><strong>Production Date:</strong> {selectedInvoiceBooking.bookingDate}</p>
+                  <p><strong>Shoot Hours:</strong> {selectedInvoiceBooking.startTime} - {selectedInvoiceBooking.endTime} ({selectedInvoiceBooking.shootHours} hrs)</p>
+                  <p><strong>Cast & Crew:</strong> {selectedInvoiceBooking.guestCount} People</p>
+                  {selectedInvoiceBooking.specialNotes && (
+                    <p className="col-span-full"><strong>Notes:</strong> {selectedInvoiceBooking.specialNotes}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Financial Itemization Table */}
+              <div className="space-y-2">
+                <h5 className="font-heading font-bold text-xs uppercase tracking-wider text-muted-foreground">
+                  Financial Statement & Hourly Charges
+                </h5>
+                <div className="rounded-xl border border-border overflow-hidden">
+                  <table className="w-full text-xs text-left">
+                    <thead className="bg-muted/60 text-muted-foreground uppercase font-bold text-[10px]">
+                      <tr>
+                        <th className="px-4 py-2.5">Description</th>
+                        <th className="px-4 py-2.5 text-right">Hourly Rate</th>
+                        <th className="px-4 py-2.5 text-right">Shoot Hours</th>
+                        <th className="px-4 py-2.5 text-right">Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      <tr>
+                        <td className="px-4 py-3 font-medium text-foreground">
+                          Production Studio Reservation ({selectedInvoiceBooking.studioCategory})
+                        </td>
+                        <td className="px-4 py-3 text-right text-muted-foreground">
+                          ${Number(selectedInvoiceBooking.hourlyRate || 0)}/hr
+                        </td>
+                        <td className="px-4 py-3 text-right text-muted-foreground">
+                          {selectedInvoiceBooking.shootHours} hrs
+                        </td>
+                        <td className="px-4 py-3 text-right font-semibold text-foreground">
+                          ${Number(selectedInvoiceBooking.totalAmount || 0).toFixed(2)}
+                        </td>
+                      </tr>
+                    </tbody>
+                    <tfoot className="bg-muted/30 border-t border-border font-bold">
+                      <tr>
+                        <td colSpan={3} className="px-4 py-3 text-right text-foreground">
+                          Total Reservation Amount:
+                        </td>
+                        <td className="px-4 py-3 text-right text-primary text-sm font-black">
+                          ${Number(selectedInvoiceBooking.totalAmount || 0).toFixed(2)} USD
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+
+              {/* Policy Footer */}
+              <div className="pt-4 border-t border-border text-[11px] text-muted-foreground space-y-1">
+                <p>• Verified under StudioSpace Platform Creator Terms & Conditions.</p>
+                <p>• Covered by $1,000,000 Host Liability Protection and STC Double-Booking Prevention Guarantee.</p>
+                <p className="font-mono text-[10px]">ID: {selectedInvoiceBooking._id}</p>
+              </div>
             </div>
           </div>
         </div>
