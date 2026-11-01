@@ -24,14 +24,12 @@
 
 ## 🛠️ Complete Tech Stack
 
-| Layer | Technologies Selected |
+| Layer | Technology Selection |
 |---|---|
-| **Frontend Framework** | **Next.js 16** (App Router), React 19, TypeScript |
-| **Styling & Components** | **Tailwind CSS v4**, Radix UI / Shadcn UI tokens, Lucide Icons |
-| **Notifications & Receipts** | **Sonner** (Rich Toasts), **jsPDF** (Invoice Generator) |
-| **Backend API** | **Express.js**, Node.js (ES Modules), Cookie Parser, CORS |
-| **Database & ODM** | **MongoDB Atlas** (Native MongoClient), Aggregation & Indexes |
-| **Auth & Security** | **JWT (JSON Web Tokens)**, HTTPOnly Secure Cookies, **Bcrypt.js** |
+| **FrontEnd** | Next JS (App Router), Shadcn UI / Radix UI tokens, Tailwind CSS, TypeScript / JavaScript |
+| **Authentication & Authorization** | BetterAuth, MongoDB Adapter, JWT, HTTPOnly Secure Cookies |
+| **BackEnd** | Express JS, MongoDB Atlas (Native MongoClient), TypeScript / JavaScript |
+| **Integrations & Utilities** | ImgBB Image Upload API, jsPDF Invoice Generator, Sonner Modern Toasts |
 
 ---
 

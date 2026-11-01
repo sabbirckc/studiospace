@@ -7,6 +7,7 @@ import { useAuth } from '@/context/auth-context';
 import { useTheme } from '@/context/theme-context';
 import {
   Aperture,
+  LayoutDashboard,
   Sun,
   Moon,
   Menu,
@@ -257,6 +258,14 @@ export function Navbar() {
                   </div>
 
                   <Link
+                    href="/dashboard"
+                    className="flex items-center gap-2.5 px-3 py-2 text-sm rounded-xl text-foreground hover:bg-muted transition-colors"
+                  >
+                    <LayoutDashboard className="w-4 h-4 text-primary" />
+                    <span>Dashboard</span>
+                  </Link>
+
+                  <Link
                     href="/add-studio"
                     className="flex items-center gap-2.5 px-3 py-2 text-sm rounded-xl text-foreground hover:bg-muted transition-colors"
                   >
@@ -370,6 +379,13 @@ export function Navbar() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 pt-1">
+                  <Link
+                    href="/dashboard"
+                    className="col-span-2 flex items-center justify-center gap-2 p-2.5 text-xs font-medium rounded-lg bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20"
+                  >
+                    <LayoutDashboard className="w-3.5 h-3.5" />
+                    <span>Dashboard Overview</span>
+                  </Link>
                   <Link
                     href="/add-studio"
                     className="flex items-center gap-2 p-2.5 text-xs font-medium rounded-lg border border-border hover:bg-muted"

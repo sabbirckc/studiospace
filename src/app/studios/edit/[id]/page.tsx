@@ -14,9 +14,12 @@ import {
   Image as ImageIcon,
   Check,
   ArrowRight,
-  ChevronLeft
+  ChevronLeft,
+  UploadCloud,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { uploadToImgBB } from '@/lib/upload';
 
 const DEFAULT_AMENITIES = [
   'Two-Wall Infinity Cyclorama',
@@ -51,6 +54,29 @@ function EditStudioForm({ studioId }: { studioId: string }) {
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [overview, setOverview] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file (PNG, JPG, WebP).');
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      toast.loading('Uploading studio photo to ImgBB...', { duration: 2000 });
+      const uploadedUrl = await uploadToImgBB(file);
+      setImageUrl(uploadedUrl);
+      toast.success('Studio image uploaded to ImgBB successfully!');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to upload image to ImgBB.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchExisting = async () => {
@@ -282,6 +308,29 @@ function EditStudioForm({ studioId }: { studioId: string }) {
                 />
               </div>
             </div>
+          </div>
+
+          {/* Image Upload via ImgBB */}
+          <div className="p-4 rounded-2xl border border-dashed border-border bg-muted/30 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <UploadCloud className="w-5 h-5" />}
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-foreground">Upload from Device (ImgBB Integration)</p>
+                <p className="text-[11px] text-muted-foreground">Upload new cover photo directly to ImgBB cloud storage</p>
+              </div>
+            </div>
+            <label className="cursor-pointer px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity flex items-center gap-2">
+              {isUploading ? 'Uploading...' : 'Choose Image File'}
+              <input
+                type="file"
+                accept="image/*"
+                disabled={isUploading}
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+            </label>
           </div>
 
           {/* Image URL & Preview */}
