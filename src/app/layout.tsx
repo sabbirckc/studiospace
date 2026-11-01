@@ -21,8 +21,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full antialiased suppressHydrationWarning">
-      <body className="min-h-full flex flex-col bg-background text-foreground transition-colors duration-300">
+    <html lang="en" suppressHydrationWarning className="h-full antialiased">
+      <body suppressHydrationWarning className="min-h-full flex flex-col bg-background text-foreground transition-colors duration-300">
         <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" />
         <ThemeProvider>
           <AuthProvider>
