@@ -1,55 +1,29 @@
 /**
  * Resilient Multi-Tier Image Upload Engine:
- * 1. ImgBB Cloud API (when API key is provided)
- * 2. High-speed free cloud hosting (Litterbox API - no key needed)
- * 3. Client-side Base64 Data URL (guaranteed 100% offline & zero-failure fallback)
+ * Uploads to internal /api/upload endpoint (same-origin, 0 CORS issues)
+ * which seamlessly routes to ImgBB (if key configured) or free cloud CDN.
+ * Fallback to direct client-side Base64 Data URL if anything fails.
  */
 export async function uploadToImgBB(file: File): Promise<string> {
-  const apiKey = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
-
-  // 1. Try ImgBB if key exists
-  if (apiKey && apiKey !== 'your_imgbb_api_key_here') {
-    try {
-      const formData = new FormData();
-      formData.append('image', file);
-
-      const res = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await res.json().catch(() => ({}));
-      if (data?.success && data?.data?.url) {
-        return data.data.url;
-      }
-    } catch (err) {
-      console.warn('ImgBB API attempt bypassed, using cloud fallback:', err);
-    }
-  }
-
-  // 2. Try free cloud image hosting (Litterbox by Catbox)
   try {
     const formData = new FormData();
-    formData.append('reqtype', 'fileupload');
-    formData.append('time', '72h');
-    formData.append('fileToUpload', file);
+    formData.append('image', file);
 
-    const res = await fetch('https://litterbox.catbox.moe/resources/internals/api.php', {
+    const res = await fetch('/api/upload', {
       method: 'POST',
       body: formData,
     });
 
-    if (res.ok) {
-      const urlText = await res.text();
-      if (urlText && urlText.trim().startsWith('http')) {
-        return urlText.trim();
-      }
+    const data = await res.json().catch(() => ({}));
+
+    if (res.ok && data?.success && data?.url) {
+      return data.url;
     }
   } catch (err) {
-    console.warn('Cloud hosting bypassed, using Data URL fallback:', err);
+    console.warn('Internal upload endpoint failed, falling back to client reader:', err);
   }
 
-  // 3. Guaranteed Fallback: Read as base64 Data URL
+  // Guaranteed client-side fallback
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
