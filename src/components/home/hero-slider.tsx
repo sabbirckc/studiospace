@@ -78,7 +78,10 @@ export function HeroSlider() {
   const ActiveIcon = activeSlide.badgeIcon;
 
   return (
-    <div className="relative w-full h-[580px] sm:h-[620px] lg:h-[680px] overflow-hidden bg-black select-none">
+    <div
+      id="hero-banner"
+      className="scroll-mt-20 relative w-full h-[580px] sm:h-[620px] lg:h-[680px] overflow-hidden bg-black select-none"
+    >
       {/* Background Images Crossfade */}
       {HERO_SLIDES.map((slide, index) => {
         const isActive = index === current;

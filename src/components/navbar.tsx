@@ -74,17 +74,19 @@ export function Navbar() {
     };
   }, []);
 
-  // Handle smooth scroll when navigating to #how-it-works or #about-us on mount or route transition
+  // Handle smooth scroll when navigating to #how-it-works, #about-us, or #hero-banner on mount or route transition
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const hash = window.location.hash;
-      if (hash === '#how-it-works' || hash === '#about-us') {
+      if (hash === '#how-it-works' || hash === '#about-us' || hash === '#hero-banner') {
         setActiveHash(hash);
         setTimeout(() => {
           const id = hash.replace('#', '');
           const el = document.getElementById(id);
           if (el) {
             el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } else {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
           }
         }, 150);
       }
@@ -103,6 +105,21 @@ export function Navbar() {
     { label: 'How It Works', href: '/#how-it-works' },
     { label: 'About Us', href: '/#about-us' },
   ];
+
+  const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (pathname === '/') {
+      e.preventDefault();
+      const el = document.getElementById('hero-banner');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      window.history.pushState(null, '', '/');
+      setActiveHash('');
+    }
+    setMobileMenuOpen(false);
+  };
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     if (href.includes('#how-it-works')) {
@@ -161,7 +178,7 @@ export function Navbar() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand Logo with Aperture Icon */}
-        <Link href="/" className="flex items-center gap-2.5 group">
+        <Link href="/#hero-banner" onClick={handleLogoClick} className="flex items-center gap-2.5 group cursor-pointer">
           <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-md transition-transform duration-300 group-hover:scale-105 group-hover:rotate-45">
             <Aperture className="w-5 h-5 transition-transform duration-300 group-hover:-rotate-45" />
           </div>
