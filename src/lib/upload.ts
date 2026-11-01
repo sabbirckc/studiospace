@@ -20,3 +20,4 @@ export async function uploadToImgBB(file: File): Promise<string> {
 
   throw new Error(data?.error?.message || 'Failed to upload image to ImgBB.');
 }
+
