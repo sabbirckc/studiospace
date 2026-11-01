@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
-import { GoogleAuthModal } from '@/components/google-auth-modal';
+import { authClient } from '@/lib/auth-client';
 
 export interface User {
   id: string;
@@ -19,8 +19,6 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string, photoURL?: string) => Promise<boolean>;
   loginWithGoogle: () => Promise<boolean>;
-  loginWithGoogleEmail: (name: string, email: string) => Promise<boolean>;
-  openGoogleModal: () => void;
   logout: () => Promise<void>;
   updateUser: (updated: Partial<User>) => void;
 }
@@ -31,8 +29,6 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => false,
   register: async () => false,
   loginWithGoogle: async () => false,
-  loginWithGoogleEmail: async () => false,
-  openGoogleModal: () => {},
   logout: async () => {},
   updateUser: () => {},
 });
@@ -40,7 +36,6 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
 
   // Initialize session on mount
   useEffect(() => {
@@ -54,8 +49,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to parse cached user:', e);
     }
 
-    // 2. Validate session with backend API
+    // 2. Validate session with Better-Auth & backend API
     const verifySession = async () => {
+      try {
+        // A. Check Better-Auth session
+        const sessionRes = await fetch('/api/auth/get-session');
+        if (sessionRes.ok) {
+          const sessionData = await sessionRes.json();
+          if (sessionData?.user) {
+            const authUser: User = {
+              id: sessionData.user.id || sessionData.user._id,
+              name: sessionData.user.name,
+              email: sessionData.user.email,
+              photoURL: sessionData.user.image || sessionData.user.photoURL,
+              role: 'creator',
+            };
+            setUser(authUser);
+            localStorage.setItem('studiospace_user', JSON.stringify(authUser));
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (e) {
+        // fallback to Express API
+      }
+
+      // B. Validate session with backend API
       try {
         const res = await api.get('/api/auth/me');
         if (res.success && res.user) {
@@ -66,8 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           localStorage.removeItem('studiospace_user');
         }
       } catch (err) {
-        // If 401 or offline, keep localStorage if token might still be valid or clear if unauth
-        // Don't violently log out if server temporarily disconnected
+        // Keep cached if offline
       } finally {
         setLoading(false);
       }
@@ -108,123 +126,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const loginWithGoogleEmail = async (name: string, email: string): Promise<boolean> => {
+  const loginWithGoogle = async (): Promise<boolean> => {
     try {
-      toast.loading('Registering with Google email...', { id: 'google-reg' });
-      const res = await api.post('/api/auth/social-login', {
-        name,
-        email,
-        photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-        authProvider: 'google',
+      toast.loading('Connecting to Google via Better-Auth...', { duration: 2500 });
+      await authClient.signIn.social({
+        provider: 'google',
+        callbackURL: '/',
       });
-      toast.dismiss('google-reg');
-      if (res.success && res.user) {
-        setUser(res.user);
-        localStorage.setItem('studiospace_user', JSON.stringify(res.user));
-        toast.success(`Welcome to StudioSpace, ${res.user.name}!`);
-        return true;
-      } else {
-        toast.error(res.error || 'Registration failed.');
-        return false;
-      }
+      return true;
     } catch (err: any) {
-      toast.dismiss('google-reg');
-      toast.error(err.message || 'Error completing Google registration.');
+      console.error('Better-Auth Google login error:', err);
+      toast.error(err.message || 'Failed to start Google sign-in.');
       return false;
     }
   };
 
-  const loginWithGoogle = async (): Promise<boolean> => {
-    const GOOGLE_CLIENT_ID =
-      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
-      '854730323504-sm81qnpmh82e5ara7ejlarsopiga56tr.apps.googleusercontent.com';
-
-    return new Promise((resolve) => {
-      // 1. Try Google Identity Services OAuth2 Popup
-      if (typeof window !== 'undefined' && (window as any).google?.accounts?.oauth2) {
-        try {
-          const client = (window as any).google.accounts.oauth2.initTokenClient({
-            client_id: GOOGLE_CLIENT_ID,
-            scope: 'email profile openid',
-            callback: async (tokenResponse: any) => {
-              if (tokenResponse?.access_token) {
-                try {
-                  toast.loading('Verifying Google credentials...', { id: 'google-auth' });
-                  // Fetch verified profile from Google's userinfo endpoint
-                  const profileRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                    headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-                  });
-
-                  if (!profileRes.ok) {
-                    throw new Error('Failed to fetch profile from Google.');
-                  }
-
-                  const profile = await profileRes.json();
-
-                  const res = await api.post('/api/auth/social-login', {
-                    name: profile.name || profile.given_name,
-                    email: profile.email,
-                    photoURL: profile.picture,
-                    access_token: tokenResponse.access_token,
-                  });
-
-                  toast.dismiss('google-auth');
-
-                  if (res.success && res.user) {
-                    setUser(res.user);
-                    localStorage.setItem('studiospace_user', JSON.stringify(res.user));
-                    toast.success(`Welcome to StudioSpace, ${res.user.name}!`);
-                    resolve(true);
-                    return;
-                  } else {
-                    toast.error(res.error || 'Social login failed on server.');
-                    resolve(false);
-                    return;
-                  }
-                } catch (apiErr: any) {
-                  toast.dismiss('google-auth');
-                  console.error('Google profile sync error:', apiErr);
-                  setIsGoogleModalOpen(true);
-                  resolve(false);
-                  return;
-                }
-              }
-              resolve(false);
-            },
-            error_callback: (error: any) => {
-              console.warn('Google OAuth popup notice:', error);
-              // Open custom Google authorization modal so user is never blocked
-              setIsGoogleModalOpen(true);
-              resolve(false);
-            },
-          });
-
-          client.requestAccessToken({ prompt: 'select_account' });
-          return;
-        } catch (initErr: any) {
-          console.warn('GSI client init error:', initErr);
-          setIsGoogleModalOpen(true);
-          resolve(false);
-          return;
-        }
-      }
-
-      // 2. Fallback: Open custom Google authorization modal
-      setIsGoogleModalOpen(true);
-      resolve(false);
-    });
-  };
-
   const logout = async () => {
     try {
+      await authClient.signOut();
+    } catch (e) {}
+    try {
       await api.post('/api/auth/logout');
-    } catch (err) {
-      console.error('Logout error:', err);
-    } finally {
-      setUser(null);
-      localStorage.removeItem('studiospace_user');
-      toast.success('You have been logged out.');
-    }
+    } catch (e) {}
+    setUser(null);
+    localStorage.removeItem('studiospace_user');
+    toast.success('You have been logged out.');
   };
 
   const updateUser = (updated: Partial<User>) => {
@@ -242,21 +168,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         register,
         loginWithGoogle,
-        loginWithGoogleEmail,
-        openGoogleModal: () => setIsGoogleModalOpen(true),
         logout,
         updateUser,
       }}
     >
       {children}
-      <GoogleAuthModal
-        isOpen={isGoogleModalOpen}
-        onClose={() => setIsGoogleModalOpen(false)}
-        onSubmit={loginWithGoogleEmail}
-      />
     </AuthContext.Provider>
   );
 }
 
 export const useAuth = () => useContext(AuthContext);
-

@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { register, loginWithGoogle, openGoogleModal } = useAuth();
+  const { register, loginWithGoogle } = useAuth();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -243,13 +243,6 @@ export default function RegisterPage() {
           <span>Continue with Google</span>
         </button>
 
-        <button
-          type="button"
-          onClick={openGoogleModal}
-          className="w-full text-center text-xs text-primary font-medium hover:underline cursor-pointer"
-        >
-          Having trouble with Google popup? Register with Google Email directly →
-        </button>
 
         {/* Link to Login */}
         <p className="text-center text-xs text-muted-foreground">

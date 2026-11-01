@@ -11,7 +11,7 @@ function LoginFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get('redirect') || '/';
-  const { login, loginWithGoogle, openGoogleModal } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -197,13 +197,6 @@ function LoginFormContent() {
         <span>Continue with Google</span>
       </button>
 
-      <button
-        type="button"
-        onClick={openGoogleModal}
-        className="w-full text-center text-xs text-primary font-medium hover:underline cursor-pointer"
-      >
-        Sign in with Google Email directly →
-      </button>
 
       {/* Link to Register */}
       <p className="text-center text-xs text-muted-foreground">
