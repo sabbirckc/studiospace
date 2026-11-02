@@ -316,7 +316,9 @@ export function Navbar() {
 
                   <div className="border-t border-border mt-1 pt-1">
                     <button
-                      onClick={logout}
+                      onClick={async () => {
+                        await logout();
+                      }}
                       className="w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-xl text-destructive hover:bg-destructive/10 transition-colors"
                     >
                       <LogOut className="w-4 h-4" />
@@ -434,7 +436,9 @@ export function Navbar() {
                 </div>
 
                 <button
-                  onClick={logout}
+                  onClick={async () => {
+                    await logout();
+                  }}
                   className="w-full mt-2 flex items-center justify-center gap-2 py-2 text-sm text-destructive rounded-xl border border-destructive/20 hover:bg-destructive/10"
                 >
                   <LogOut className="w-4 h-4" />

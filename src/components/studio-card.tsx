@@ -76,10 +76,10 @@ export function StudioCard({ studio }: { studio: Studio }) {
 
         {/* Wishlist Heart Button (Optional Requirement) */}
         <button
-          onClick={(e) => {
+          onClick={async (e) => {
             e.preventDefault();
             e.stopPropagation();
-            toggleWishlist(studio._id, studio.title);
+            await toggleWishlist(studio._id, studio.title);
           }}
           aria-label={saved ? 'Remove from wishlist' : 'Save to wishlist'}
           className={`absolute top-3 right-3 w-9 h-9 rounded-full backdrop-blur-md flex items-center justify-center transition-all ${
