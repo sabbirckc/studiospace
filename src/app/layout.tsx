@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
+import { Suspense } from 'react';
 import './globals.css';
 
 import { ThemeProvider } from '@/context/theme-context';
@@ -7,6 +8,7 @@ import { AuthProvider } from '@/context/auth-context';
 import { WishlistProvider } from '@/context/wishlist-context';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
+import { RouteProgressBar } from '@/components/route-progress-bar';
 import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
@@ -23,6 +25,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className="h-full antialiased">
       <body suppressHydrationWarning className="min-h-full flex flex-col bg-background text-foreground transition-colors duration-300">
+        <Suspense fallback={null}>
+          <RouteProgressBar />
+        </Suspense>
         <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" />
         <ThemeProvider>
           <AuthProvider>
