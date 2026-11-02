@@ -1,6 +1,6 @@
 # StudioSpace — Peer-to-Peer Creative Workspace & Production Studio Sharing Platform
 
-> **Live Application URL**: [https://studiospace-peer-marketplace.vercel.app](https://studiospace-peer-marketplace.vercel.app)  
+> **Live Application URL**: [https://studiospace-frontend-two.vercel.app](https://studiospace-frontend-two.vercel.app)  
 > **Server API Repository**: [https://github.com/sabbirckc/studiospace-server](https://github.com/sabbirckc/studiospace-server)  
 > **Client Web Repository**: [https://github.com/sabbirckc/studiospace](https://github.com/sabbirckc/studiospace)
 
