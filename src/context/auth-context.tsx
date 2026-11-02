@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { authClient } from '@/lib/auth-client';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
 
 export interface User {
   id: string;
